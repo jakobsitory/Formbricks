@@ -1,67 +1,152 @@
-import { cn } from "@/modules/ui/lib/utils";
-import { Slot } from "@radix-ui/react-slot";
-import { type VariantProps, cva } from "class-variance-authority";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/modules/ui/components/button";
+import { VariantProps, cva } from "class-variance-authority";
+import { AlertCircle, AlertTriangle, CheckCircle, Info, Terminal } from "lucide-react";
 import * as React from "react";
+import { cn } from "@formbricks/lib/cn";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+// Add a type definition for variant configuration
+type VariantConfig = {
+  variant?: string;
+  icon: React.ReactNode;
+  buttonClass?: string;
+  buttonHover?: string;
+  buttonActive?: string;
+  buttonDisabled?: string;
+  buttonText?: string;
+};
+
+const alertVariants = cva(
+  "relative w-full rounded-xl border px-4 py-3 flex justify-between [&>svg]:absolute [&>svg]:left-3 [&>svg]:top-4 [&>svg+div]:translate-y-[-3px] [&:has(svg)]:pl-9",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/50",
-        ghost: "hover:bg-accent hover:text-accent-foreground text-primary",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
-      },
-      loading: {
-        true: "cursor-not-allowed opacity-50",
+        default: "text-foreground border-border",
+        error: "text-red-800 border-red-600 [&>svg]:text-red-600",
+        warning: "text-amber-800 border-amber-600 [&>svg]:text-amber-600",
+        info: "text-blue-800 border-blue-600 [&>svg]:text-blue-600",
+        success: "text-green-800 border-green-600 [&>svg]:text-green-600",
       },
     },
     defaultVariants: {
       variant: "default",
-      size: "default",
-      loading: false,
     },
   }
 );
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-  loading?: boolean;
-}
+// Updated variantConfig to remove the default button shadow for non-default variants.
+const variantConfig: Record<string, VariantConfig> = {
+  default: {
+    icon: <Terminal className="h-4 w-4" />,
+    buttonClass: "secondary",
+  },
+  error: {
+    icon: <AlertCircle className="h-4 w-4 text-red-600" />,
+    buttonClass: "bg-red-50 shadow-none",
+    buttonHover: "hover:bg-red-50/50",
+    buttonDisabled: "disabled:bg-red-50",
+    buttonText: "text-red-800",
+  },
+  warning: {
+    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+    buttonClass: "bg-amber-50 shadow-none",
+    buttonHover: "hover:bg-amber-50/50",
+    buttonDisabled: "disabled:bg-amber-50",
+    buttonText: "text-amber-800",
+  },
+  info: {
+    icon: <Info className="h-4 w-4 text-blue-600" />,
+    buttonClass: "bg-blue-50 shadow-none",
+    buttonHover: "hover:bg-blue-50/50",
+    buttonDisabled: "disabled:bg-blue-50",
+    buttonText: "text-blue-800",
+  },
+  success: {
+    icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+    buttonClass: "bg-green-50 shadow-none",
+    buttonHover: "hover:bg-green-50/50",
+    buttonDisabled: "disabled:bg-green-50",
+    buttonText: "text-green-800",
+  },
+};
 
-const Button2 = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading, asChild = false, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+// Extend the props to include an optional "button" prop
+type AlertJakobProps = React.HTMLAttributes<HTMLDivElement> &
+  VariantProps<typeof alertVariants> & {
+    icon?: React.ReactNode;
+    dangerouslySetInnerHTML?: { __html: string | TrustedHTML };
+    button?: React.ReactElement<{ className?: string; variant?: string }>;
+  };
+
+const AlertJakob = React.forwardRef<HTMLDivElement, AlertJakobProps>(
+  ({ className, variant = "default", icon, button, children, ...props }, ref) => {
+    const validVariant = variant || "default";
+    const config = variantConfig[validVariant] || variantConfig.default;
+    const renderIcon = icon || config.icon;
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, loading, className }))}
-        disabled={loading}
-        ref={ref}
-        {...props}>
-        {loading ? (
-          <>
-            <Loader2 className="animate-spin" />
-            {children}
-          </>
-        ) : (
-          children
+      <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props}>
+        {renderIcon && <span className="absolute left-3 top-4">{renderIcon}</span>}
+        <div className="flex-grow">{children}</div>
+        {button && (
+          <div className="ml-3 self-end">
+            {React.isValidElement(button)
+              ? React.cloneElement(button as React.ReactElement<{ className?: string; variant?: string }>, {
+                  // For the default alert we force variant:"secondary"
+                  variant: validVariant === "default" ? "secondary" : button.props?.variant,
+                  className: cn(
+                    button.props?.className,
+                    config.buttonClass || "",
+                    config.buttonHover || "",
+                    config.buttonActive || "",
+                    config.buttonDisabled || "",
+                    config.buttonText || ""
+                  ),
+                })
+              : button}
+          </div>
         )}
-      </Comp>
+      </div>
     );
   }
 );
-Button2.displayName = "Butto2n";
+AlertJakob.displayName = "Alert";
 
-export { Button2, buttonVariants };
+const AlertTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement> & { dangerouslySetInnerHTML?: { __html: string | TrustedHTML } }
+>(({ className, children, ...props }, ref) => (
+  <h5
+    ref={ref}
+    className={cn("mb-0.5 cursor-default text-sm font-medium leading-none", className)}
+    {...props}>
+    {children}
+  </h5>
+));
+AlertTitle.displayName = "AlertTitle";
+
+const AlertDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement> & { dangerouslySetInnerHTML?: { __html: string | TrustedHTML } }
+>(({ className, children, ...props }, ref) => (
+  <div ref={ref} className={cn("cursor-default text-sm [&_p]:leading-none", className)} {...props}>
+    {children}
+  </div>
+));
+AlertDescription.displayName = "AlertDescription";
+
+const AlertButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }
+>(({ className, loading, ...props }, ref) => (
+  <Button
+    ref={ref}
+    className={cn("shrink-0", className)}
+    disabled={loading || props.disabled}
+    // variant="secondary"
+    {...props}>
+    {loading ? "Loading..." : props.children}
+  </Button>
+));
+AlertButton.displayName = "AlertButton";
+
+export { AlertJakob, AlertDescription, AlertTitle, AlertButton };

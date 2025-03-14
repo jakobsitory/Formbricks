@@ -1,62 +1,74 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
-import { Button2 } from "./index";
+import { AlertButton, AlertDescription, AlertJakob, AlertTitle } from "./index";
 
-const meta = {
-  title: "ui/Button2",
-  component: Button2,
+// Updated story args type: removed booleans and instead use a buttonText prop.
+interface AlertJakobStoryArgs
+  extends Omit<React.ComponentProps<typeof AlertJakob>, "children" | "icon" | "button"> {
+  title: string;
+  description: string;
+  buttonText?: string;
+}
+
+const meta: Meta<AlertJakobStoryArgs> = {
+  title: "ui/AlertJakob",
+  component: AlertJakob,
   tags: ["autodocs"],
-  parameters: {
-    // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
-    layout: "centered",
-  },
   argTypes: {
     variant: {
       control: "select",
-      options: ["outline", "default", "secondary", "ghost", "destructive", "link"],
+      options: ["default", "error", "warning", "info", "success"],
     },
-    size: { control: "select", options: ["sm", "lg", "fab", "icon"] },
+    title: { control: "text" },
+    description: { control: "text" },
+    buttonText: { control: "text" },
   },
-  // Use `fn` to spy on the onClick arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#action-args
-  args: { onClick: fn() },
-} satisfies Meta<typeof Button2>;
+  args: {
+    variant: "default",
+    title: "Heads up!",
+    description: "This is an alert.",
+    buttonText: "Learn more",
+  },
+  render: (args) => {
+    const { title, description, buttonText, ...rest } = args;
+    return (
+      <AlertJakob
+        {...rest}
+        // Using default icon if none is provided so the variant styling applies.
+        icon={undefined}
+        button={buttonText ? <AlertButton>{buttonText}</AlertButton> : undefined}>
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>{description}</AlertDescription>
+      </AlertJakob>
+    );
+  },
+};
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<AlertJakobStoryArgs>;
 
-export const Primary: Story = {
+export const Default: Story = {};
+
+export const Error: Story = {
   args: {
-    children: "Button",
-    variant: "default",
+    variant: "error",
   },
 };
 
-export const Secondary: Story = {
+export const Info: Story = {
   args: {
-    children: "Button",
-    variant: "secondary",
+    variant: "info",
   },
 };
 
-export const Minimal: Story = {
+export const Warning: Story = {
   args: {
-    children: "Button",
-    variant: "ghost",
+    variant: "warning",
   },
 };
 
-export const Warn: Story = {
+export const Success: Story = {
   args: {
-    children: "Button",
-    variant: "destructive",
-  },
-};
-
-export const Loading: Story = {
-  args: {
-    children: "Button",
-    variant: "default",
-    loading: true,
+    variant: "success",
   },
 };
